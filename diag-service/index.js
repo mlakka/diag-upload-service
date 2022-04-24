@@ -1,6 +1,6 @@
 const fileUpload = require('express-fileupload');
 const express = require('express')
-const { createLogger, transports } = require("winston");
+const { createLogger } = require("winston");
 const LokiTransport = require("winston-loki");
 const promBundle = require('express-prom-bundle');
 
