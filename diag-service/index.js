@@ -44,33 +44,34 @@ app.post('/upload', (req, res) => {
         const label = { env: 'dev' };
         const message = 'No files uploaded'; 
         logger['warn']({ message, label });
-        console.log('logged warning');
         return res.status(400).send(message);
     }
     let diag = req.files.diag;
     if(diag){
-        diag.mv(`${diagDir}/${diag.name}`, function (err) {
-            if (err) {
+        if(diag.name.endsWith('.tgz')){
+            diag.mv(`${diagDir}/${diag.name}`, function (err) {
+                if (err) {
+                const label = { env: 'dev' };
+                logger['error']({ err, label });
+                return res.status(500).send(err);
+                }
+            });
+        }else{
             const label = { env: 'dev' };
-            logger['error']({ err, label });
-            console.log('logged error');
-            return res.status(500).send(err);
-            }
-        });
+            const message = 'diag files can only be .tgz files';
+            logger['error']({ message , label });
+            return res.status(500).send(message);
+        }
     }else{
         const label = { env: 'dev' };
         const message = 'diag key not found in body';
-        console.log('logged error');
         logger['error']({ message , label });
             return res.status(500).send(message);
-
     }
 
     const label = { env: 'dev' };
     const message = `File ${diag.name} uploaded`; 
     logger['info']({ message, label });
-    console.log(logger['info']({ message, label }));
-    console.log('logged info');
     res.send(`File ${diag.name} uploaded`);
 })
 
