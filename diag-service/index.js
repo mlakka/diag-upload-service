@@ -1,5 +1,12 @@
 const fileUpload = require('express-fileupload');
-const express = require('express')
+const express = require('express');
+const client = require('prom-client');
+const register = new client.Registry();
+
+register.setDefaultLabels({
+    app: 'diag-service'
+})
+
 const app = express();
 const port = 8000;
 
