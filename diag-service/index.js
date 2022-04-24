@@ -1,11 +1,12 @@
 const fileUpload = require('express-fileupload');
 const express = require('express')
 const app = express();
-const port = 8000;
-
 const promBundle = require('express-prom-bundle')
 
+const port = 8000;
+
 const metricsMiddleware = promBundle({
+    buckets: [0.1, 0.4, 0.7],
     autoregister: true,
     includeStatusCode: true,
     includePath: true,
@@ -22,21 +23,17 @@ app.use(fileUpload());
 app.use(express.static(diagDir))
 
 app.post('/upload', (req, res) => {
-    const end = metricsMiddleware.startTimer();
     const route = req.originalUrl;
 
     if (!req.files || Object.keys(req.files).length === 0) {
-        end({ route, code: res.status(400).statusCode, method: req.method })
-        return res.send('No files uploaded.');
+        return res.status(400).send('No files uploaded.');
     }
     let diag = req.files.diag;
     diag.mv(`${diagDir}/${diag.name}`, function (err) {
         if (err) {
-            end({ route, code: res.status(500).statusCode, method: req.method })
-            return res.send(err);
+            return res.status(500).send(err);
         }
     });
-    end({ route, code: res.status(200).statusCode, method: req.method })
     res.send(`File ${diag.name} uploaded`);
 })
 
