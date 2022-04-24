@@ -4,8 +4,8 @@ networks:
     driver: bridge
 volumes:
     prometheus_data: {}
+    loki-data: {}
     grafana_data: {}
-    alertmanager-data: {}
 
 services:
 
@@ -29,17 +29,6 @@ services:
       - 9090:9090
     expose:
       - 9090
-    networks:
-      - monitoring
-
-  alertmanager:
-    image: prom/alertmanager:v0.24.0
-    ports:
-      - "9093:9093"
-    volumes:
-      - "./alertmanager:/config"
-      - alertmanager-data:/data
-    command: --config.file=/config/alertmanager.yml --log.level=debug
     networks:
       - monitoring
 

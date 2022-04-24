@@ -3,4 +3,4 @@ global:
 scrape_configs:
   - job_name: "diag-service"
     static_configs:
-      -targets: ["diag-service:8000"]
+      - targets: ["diag-service:8000"]
