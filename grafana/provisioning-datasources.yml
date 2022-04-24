@@ -4,3 +4,8 @@ datasources:
   - name: Node JS (Loki)
     type: loki
     url: http://loki:3100
+    
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
