@@ -22,7 +22,7 @@ app.use(fileUpload());
 app.use(express.static(diagDir))
 
 app.post('/upload', (req, res) => {
-    const end = httpRequestTimer.startTimer();
+    const end = metricsMiddleware.startTimer();
     const route = req.originalUrl;
 
     if (!req.files || Object.keys(req.files).length === 0) {
