@@ -1,29 +1,90 @@
-name: Publish Docker image
+name: build_and_deploy_lightsail
 on: push
+
+env:
+  NODE_ENV: "dev"
+  SERVICE_NAME: "diag-service"
+
 jobs:
-  push_to_docker_hub:
-    name: Push Docker image to Docker Hub
+  build-service:
+    runs-on: ubuntu-latest
+    services:
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+      - name: Build Docker image
+        run: npm run docker:build -- -t ${{ steps.vars.outputs.image }} -t ${{ steps.vars.outputs.latest }}
+      - name: Login to DockerHub
+        run: |
+          echo "Authenticating docker.io"
+      - name: Push to DockerHub
+        run: |
+          docker push ${{ steps.vars.outputs.image }}
+          docker push ${{ steps.vars.outputs.latest }}
+
+    outputs:
+      image: ${{ steps.vars.outputs.image }}
+      latest: ${{ steps.vars.outputs.latest }}
+
+  deploy-service:
+    needs: [build-service]
     runs-on: ubuntu-latest
     steps:
-      - name: Check out the repo
-        uses: actions/checkout@v2
+      - name: prereqs
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: 'us-west-2'
+        run: |
+          aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+          aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+          aws configure set default.region $AWS_DEFAULT_REGION
+          aws configure set region $AWS_DEFAULT_REGION
+      - name: Install essentials
+        run: |
+          aws --version
+          # install LightsailCTL Plugin (https://lightsail.aws.amazon.com/ls/docs/en_us/articles/amazon-lightsail-install-software)
+          sudo apt-get update && sudo apt-get -y install curl jq
+          curl https://s3.us-west-2.amazonaws.com/lightsailctl/latest/linux-amd64/lightsailctl -o /usr/local/bin/lightsailctl
+          chmod +x /usr/local/bin/lightsailctl
+      - name: Release to Lightsail
+        env:
+          CONTAINER_SERVICE_NAME: ${{ env.SERVICE_NAME }}
+        run: |
+          echo "Releasing to Amazon Lightsail"
 
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          docker info
+          docker pull ${{ needs.build-service.outputs.image }}
 
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@v3
-        with:
-          images: ${{ secrets.DOCKERHUB_REPO }}
+          # upload the docker image for this pipeline
+          aws lightsail push-container-image \
+            --service-name $CONTAINER_SERVICE_NAME  \
+            --label ${{ env.SERVICE_NAME }}-latest  \
+            --image ${{ needs.build-service.outputs.image }}
 
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v2
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          # get uploaded image (its different every time)
+          IMAGE_TAG=$(aws lightsail get-container-images --service $CONTAINER_SERVICE_NAME | jq -r .containerImages[0].image)
+
+          # create a deployment with uploaded docker image
+          aws lightsail create-container-service-deployment \
+            --service-name $CONTAINER_SERVICE_NAME \
+            --containers "{
+              \"$CONTAINER_SERVICE_NAME\": {
+                \"image\": \"$IMAGE_TAG\",
+                \"environment\": {
+                  \"NODE_ENV\": \"production\",
+                  \"PGSSLMODE\": \"no-verify\"
+                },
+                \"ports\": {
+                  \"80\": \"HTTP\"
+                }
+              }
+            }" \
+            --public-endpoint "{
+              \"containerName\": \"$CONTAINER_SERVICE_NAME\",
+              \"containerPort\": 80,
+              \"healthCheck\": {
+                \"path\": \"/healthcheck/liveness\",
+                \"intervalSeconds\": 10
+              }
+            }"
