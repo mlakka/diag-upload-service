@@ -39,7 +39,7 @@ services:
     volumes:
       - "./alertmanager:/config"
       - alertmanager-data:/data
-    command: --config.file=/config/alertmanager.yml --log.level=
+    command: --config.file=/config/alertmanager.yml --log.level=debug
     networks:
       - monitoring
 
@@ -58,7 +58,7 @@ services:
 
   # Grafana
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:8.5.0
     container_name: grafana
     ports:
       - 3000:3000
