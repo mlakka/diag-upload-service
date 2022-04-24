@@ -1,37 +1,38 @@
 const fileUpload = require('express-fileupload');
-const express = require('express');
-const client = require('prom-client');
-const register = new client.Registry();
-
-register.setDefaultLabels({
-    app: 'diag-service'
-})
-
-client.collectDefaultMetrics({
-    app: 'diag-service',
-    prefix: 'node_',
-    timeout: 10000,
-    gcDurationBuckets: [0.001, 0.01, 0.1, 1, 2, 5],
-    register
-});
-
+const express = require('express')
 const app = express();
 const port = 8000;
 
+const client = require('express-prom-bundle')
+
+const metricsMiddleware = promBundle({
+    autoregister: true,
+    includeStatusCode: true,
+    includePath: true,
+    includeMethod: true
+});
+
+app.use(metricsMiddleware);
 const diagDir = 'diags'
 app.use(fileUpload());
 app.use(express.static(diagDir))
 
 app.post('/upload', (req, res) => {
+    const end = httpRequestTimer.startTimer();
+    const route = req.originalUrl;
+
     if (!req.files || Object.keys(req.files).length === 0) {
-        return res.status(400).send('No files uploaded.');
+        end({ route, code: res.status(400).statusCode, method: req.method })
+        return res.send('No files uploaded.');
     }
     let diag = req.files.diag;
     diag.mv(`${diagDir}/${diag.name}`, function (err) {
         if (err) {
-            return res.status(500).send(err);
+            end({ route, code: res.status(500).statusCode, method: req.method })
+            return res.send(err);
         }
     });
+    end({ route, code: res.status(200).statusCode, method: req.method })
     res.send(`File ${diag.name} uploaded`);
 })
 
