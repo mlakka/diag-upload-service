@@ -12,6 +12,7 @@
   "dependencies": {
     "express": "^4.17.1",
     "express-fileupload": "^1.2.1",
+    "express-prom-bundle": "^6.4.1",
     "prom-client": "^13.2.0"
   }
 }
