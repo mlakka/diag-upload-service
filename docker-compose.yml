@@ -5,7 +5,20 @@ networks:
 volumes:
     prometheus_data: {}
     grafana_data: {}
+    alertmanager-data: {}
+
 services:
+
+  diag-service:
+    build:
+      context: diag-service
+    ports:
+      - 8000:8000
+    expose:
+      - 8000
+    networks:
+      - monitoring
+
   prometheus:
     image: prom/prometheus:v2.35.0
     container_name: prometheus
@@ -18,25 +31,30 @@ services:
       - 9090
     networks:
       - monitoring
-  diag-service:
-    build:
-      context: diag-service
+
+  alertmanager:
+    image: prom/alertmanager:v0.24.0
     ports:
-      - 8000:8000
-    expose:
-      - 8000
+      - "9093:9093"
+    volumes:
+      - "./alertmanager:/config"
+      - alertmanager-data:/data
+    command: --config.file=/config/alertmanager.yml --log.level=
     networks:
       - monitoring
+
   # Loki
   loki:
-    image: grafana/loki:2.0.0
+    image: grafana/loki:2.5.0
     container_name: loki
     ports:
       - "3100:3100"
     command:
-      - --config.file=/mnt/config/loki-config.yaml
+      - --config.file=/etc/loki/local-config.yaml
     volumes:
-      - ./loki-config.yaml:/mnt/config/loki-config.yaml:ro
+      - ./loki/loki-config.yaml:/etc/loki/local-config.yaml:ro
+    networks:
+      - monitoring
 
   # Grafana
   grafana:
@@ -49,3 +67,5 @@ services:
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
     volumes: 
       - ./grafana/provisioning-datasources.yml:/etc/grafana/provisioning/datasources/provisioning-datasources.yml
+    networks:
+      - monitoring

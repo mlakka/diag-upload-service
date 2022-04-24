@@ -11,7 +11,7 @@ const port = 8000;
 const logger = createLogger({
     transports: [
       new LokiTransport({
-        host: "http://localhost:3100",
+        host: "http://loki:3100",
         interval: 5,
         labels: {
           job: 'nodejs'
