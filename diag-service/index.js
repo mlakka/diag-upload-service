@@ -3,13 +3,17 @@ const express = require('express')
 const app = express();
 const port = 8000;
 
-const client = require('express-prom-bundle')
+const promBundle = require('express-prom-bundle')
 
 const metricsMiddleware = promBundle({
     autoregister: true,
     includeStatusCode: true,
     includePath: true,
-    includeMethod: true
+    includeMethod: true,
+    promClient: {
+        collectDefaultMetrics: {
+        }
+    },
 });
 
 app.use(metricsMiddleware);
