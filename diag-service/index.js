@@ -35,6 +35,11 @@ app.post('/upload', (req, res) => {
     res.send(`File ${diag.name} uploaded`);
 })
 
+app.get('/metrics', async (req, res) => {
+    res.setHeader('Content-Type', register.contentType);
+    res.send(await register.metrics());
+});
+
 app.get('/download/:id', (req, res) => {
     res.sendFile(req.params.id, {root: diagDir})
 })
