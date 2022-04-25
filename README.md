@@ -41,7 +41,7 @@ This is a Node.js based application that accepts and serves .tgz Diag files thro
   ```
      curl --location --request POST 'localhost:8000/upload' \
        --header 'Content-Type: multipart/form-data' \
-       --form 'diag=@<filename>'
+       --form 'diag=@Desktop.tgz'
     Reseponse:
       File Desktop.tgz uploaded
   ```
