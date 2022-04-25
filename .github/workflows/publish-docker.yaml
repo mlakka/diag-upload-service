@@ -8,7 +8,6 @@ env:
 jobs:
   run-services:
     runs-on: ubuntu-latest
-    services:
     steps:
       - name: checkout
         uses: actions/checkout@v2
