@@ -10,6 +10,7 @@ volumes:
 services:
 
   diag-service:
+    image: diag-service:v1.0.0
     build:
       context: diag-service
     ports:
