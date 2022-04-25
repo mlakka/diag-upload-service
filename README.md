@@ -54,6 +54,7 @@ This is a Node.js based application that accepts and serves .tgz Diag files thro
   ======================================
   
   The repository leverages Github Actions as CI/CD tool. //FIXME: Though the app is working locally, CICD process is failing on Loki configurations
+  
   The workflow is as follows:
   1. Check out the repo
   2. Configure AWS credentials (pull from Github Actions Secrets)
